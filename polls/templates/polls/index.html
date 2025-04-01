@@ -1,0 +1,171 @@
+{% extends "polls/base.html" %}
+
+{% block title %}Welcome{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow-lg border-0 rounded-3 overflow-hidden">
+            <!-- Gradient Header -->
+            <div class="card-header py-4" style="background: linear-gradient(45deg, #FF416C, #FF4B2B);">
+                <h3 class="mb-0 text-center text-white display-6 fw-bold">
+                    <i class="fas fa-music me-2"></i>YouTube to MP3 Converter
+                </h3>
+                <p class="text-center text-white-50 mb-0 mt-2">Transform your favorite videos into high-quality audio</p>
+            </div>
+
+            <div class="card-body p-5">
+                <!-- Animated Wave Background -->
+                <div class="position-relative">
+                    <div class="text-center mb-5 position-relative z-index-1">
+                        <div class="display-6 fw-bold text-dark mb-3">
+                            <span style="background: linear-gradient(45deg, #FF416C, #FF4B2B); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                                Download MP3s
+                            </span>
+                        </div>
+                        <p class="lead text-muted mb-4">Quick, easy, and free conversion from YouTube videos</p>
+                        <div class="border-bottom border-2 w-85 mx-auto mb-4 opacity-25"></div>
+                    </div>
+
+                    <!-- Enhanced Form Section -->
+                    <form id="youtubeForm" method="post" action="{% url 'process_youtube' %}" class="mx-auto" style="max-width: 800px;">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <div class="input-group input-group-lg shadow-sm hover-shadow-lg transition-all">
+                                <span class="input-group-text border-0" style="background: linear-gradient(45deg, #FF416C, #FF4B2B);">
+                                    <i class="fab fa-youtube fa-lg text-white"></i>
+                                </span>
+                                <input type="text" 
+                                       class="form-control form-control-lg border-0 py-3" 
+                                       placeholder="Paste your YouTube URL here..." 
+                                       id="youtubeLink" 
+                                       name="youtube_url"
+                                       required>
+                            </div>
+                        </div>
+
+                        <!-- Styled Button -->
+                        <div class="d-grid mt-5">
+                            <button type="submit" class="btn btn-lg py-3 position-relative overflow-hidden" 
+                                    style="background: linear-gradient(45deg, #FF416C, #FF4B2B); color: white; transition: all 0.3s ease;">
+                                <span class="d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-download me-2"></i>
+                                    <span class="fw-bold">Convert to MP3</span>
+                                </span>
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Enhanced Status and Download Section -->
+                    <div class="mt-4">
+                        <div id="status" class="text-center mb-3"></div>
+                        
+                        <div id="downloadContainer" class="text-center" style="display: none;">
+                            <div class="border-top border-2 w-85 mx-auto my-4 opacity-25"></div>
+                            <div class="p-4 rounded-3" style="background: rgba(255, 65, 108, 0.1);">
+                                <h5 class="mb-3 text-gradient fw-bold">Your Download is Ready!</h5>
+                                <a id="downloadButton" href="#" class="btn btn-lg px-5 py-3" 
+                                   style="background: linear-gradient(45deg, #FF416C, #FF4B2B); color: white; transition: all 0.3s ease;">
+                                    <i class="fas fa-file-audio me-2"></i>Download MP3
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add custom styles -->
+<style>
+    .hover-shadow-lg {
+        transition: all 0.3s ease;
+    }
+    .hover-shadow-lg:hover {
+        box-shadow: 0 1rem 3rem rgba(0,0,0,.175)!important;
+    }
+    .transition-all {
+        transition: all 0.3s ease;
+    }
+    .z-index-1 {
+        z-index: 1;
+    }
+    .text-gradient {
+        background: linear-gradient(45deg, #FF416C, #FF4B2B);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    /* Button hover effect */
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(255, 65, 108, 0.4);
+    }
+    /* Input focus effect */
+    .form-control:focus {
+        box-shadow: 0 0 0 0.25rem rgba(255, 65, 108, 0.25);
+    }
+</style>
+
+<!-- Enhanced JavaScript -->
+<script>
+document.getElementById('youtubeForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const statusDiv = document.getElementById('status');
+    const downloadContainer = document.getElementById('downloadContainer');
+    const downloadButton = document.getElementById('downloadButton');
+    
+    statusDiv.innerHTML = `
+        <div class="d-flex flex-column align-items-center">
+            <div class="spinner-border" style="color: #FF416C;" role="status"></div>
+            <div class="mt-3 text-muted">Processing your request...</div>
+        </div>
+    `;
+    downloadContainer.style.display = 'none';
+    
+    const formData = new FormData(this);
+    
+    fetch("{% url 'process_youtube' %}", {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            statusDiv.innerHTML = `
+                <div class="text-success">
+                    <i class="fas fa-check-circle fa-2x mb-2"></i>
+                    <div class="mt-2">Successfully processed: ${data.title}</div>
+                </div>
+            `;
+            downloadButton.href = data.download_url;
+            downloadContainer.style.display = 'block';
+        } else {
+            statusDiv.innerHTML = `
+                <div class="text-danger">
+                    <i class="fas fa-exclamation-circle fa-2x mb-2"></i>
+                    <div class="mt-2">Error: ${data.error}</div>
+                </div>
+            `;
+            downloadContainer.style.display = 'none';
+        }
+    })
+    .catch(error => {
+        statusDiv.innerHTML = `
+            <div class="text-danger">
+                <i class="fas fa-exclamation-circle fa-2x mb-2"></i>
+                <div class="mt-2">Error: ${error}</div>
+            </div>
+        `;
+        downloadContainer.style.display = 'none';
+        console.error('Error:', error);
+    });
+});
+</script>
+{% endblock %}
+
+
